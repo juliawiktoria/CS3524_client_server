@@ -25,15 +25,17 @@ public class MessageClient
         // loop so the client can send multiple messages
         while(true)
         {
+            
             while (in.ready())
             {
-                System.out.print ( "ShoutClientSocket> " ) ;
-                message = stdin.readLine();
-                out.println( message );
+                // System.out.print ( "ShoutClientSocket> " ) ;
+                message = in.readLine();
+                System.out.println( message );
             }
 
             while (stdin.ready())
             {
+                System.out.print ( "ShoutClientSocket> " ) ;
                 message = stdin.readLine();
                 out.println(message);
             } 

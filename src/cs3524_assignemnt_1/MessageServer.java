@@ -164,22 +164,34 @@ public class MessageServer
                     }
                     else
                     {
-                        System.out.println("just send message to server and other clients");
                         // iterate over all messages that have been written by all clients
                         for (PrintWriter out: MessageServer.writers)
                         {
-                            System.out.println("before the condition is checked");
+                            // System.out.println("before the condition is checked");
                             if (this.name == null)
                             {
-                                System.out.println(">>> name is null");
+                                // System.out.println(">>> name is null");
                                 out.println("[ Client " + this.clientID + " ] says: " + message);
+                                // System.out.println("[ Client " + this.clientID + " ] says: " + message);
                             }
                             else
                             {
-                                System.out.println(">>> name NOT nulll");
-                                out.println(this.name + " says: " + message);
+                                // System.out.println(">>> name NOT nulll");
+                                out.println("[ " + this.name + " ] says: " + message);
+                                // System.out.println("[ " + this.name + " ] says: " + message);
                             }
-                            System.out.println("after the condition is checked");
+                            // System.out.println("after the condition is checked");
+                        }
+
+                        if (this.name == null)
+                        {
+                            // System.out.println(">>> name is null");
+                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                        }
+                        else
+                        {
+                            // System.out.println(">>> name NOT nulll");
+                            System.out.println("[ " + this.name + " ] says: " + message);
                         }
                     }
                 }
