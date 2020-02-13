@@ -47,22 +47,14 @@ public class MessageServer
                 String clientIDname = "[ Client #" + Integer.toString(id) + " ]";
                 System.out.println(">>> New client connection captured: " + clientIDname);
 
-                // create input and output streams
-                // BufferedReader in  = new BufferedReader( new InputStreamReader( client.getInputStream() ) );
-                // PrintWriter    out = new PrintWriter( new OutputStreamWriter( client.getOutputStream() ), true );
-
-                // send welcome message to connected client
-                // out.println( "Welcome to the socket-based ShoutServer" ) ;
-
                 // create a new ClientConnection to handle the client
                 ClientConnection clientConn = new ClientConnection(client, id);
                 System.out.println(">>> Created new ClientConnection for the client " + clientIDname);
 
-                // create a new thread for this client
-                // ServerThread clientThread = new ServerThread(clientConn);
+                // start new client thread
                 clientConn.start();
-                // add client to the ClientList
-                // clientList.put(Integer.toString(id), clientConn);
+
+                // increment id number for the next client
                 id++;
             }
         }
@@ -74,6 +66,10 @@ public class MessageServer
 
     public static void main( String[] args ) throws NumberFormatException, ClassNotFoundException, IOException, SocketException
     {   
+        if (args.length < 1) {
+            System.err.println( "Usage: java MessageServer <port>" ); 
+            return;
+        } 
         // start the program
         System.out.println ( "Messenger> start");
         // try and catch block to ensure safety
@@ -86,15 +82,11 @@ public class MessageServer
         catch ( SocketException e )
         {
             System.out.println("socket exception");
-            // System.out.println("Server exception: " + e.getMessage());
-            // e.printStackTrace();
         }
         // possibly catch an exception and display the error message
         catch ( IOException e)
         {
             System.out.println("io exception");
-            // System.out.println("Server exception: " + e.getMessage());
-            // e.printStackTrace();
         }
         
         System.out.println ( "Messenger> finished") ;
@@ -106,12 +98,13 @@ public class MessageServer
         private String name;
         private BufferedReader reader;
         private PrintWriter writer;
+
         // clientID is a String, so it can be interchangeable with clientName in HashMaps
         private String clientID;
+
         // create hash maps for storing client connections and client messages (output streams)
         public static Map< String, ClientConnection > clientList = new HashMap < String, ClientConnection > () ;
         public static Map< String, PrintWriter > clientMessages = new HashMap < String, PrintWriter > () ;
-
 
         public ClientConnection ( Socket clientSocket, Integer clientID ) throws IOException
         {
@@ -126,8 +119,8 @@ public class MessageServer
                 System.out.println("try block! run client connection");
 
                 // create input and output streams
-                reader  = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
-                writer = new PrintWriter( new OutputStreamWriter( clientSocket.getOutputStream() ), true );
+                reader  = new BufferedReader( new InputStreamReader( this.clientSocket.getInputStream() ) );
+                writer = new PrintWriter( new OutputStreamWriter( this.clientSocket.getOutputStream() ), true );
 
                 String message;
 
@@ -136,6 +129,7 @@ public class MessageServer
 
                 // add new client output stream to the list (use clientID when client not named)
                 clientMessages.put(this.clientID, writer);
+                MessageServer.writers.add(writer);
 
                 while ( (message = reader.readLine()) != null )
                 {
@@ -145,48 +139,52 @@ public class MessageServer
                     // register new client
                     if (keyWord.equals("register"))
                     {
-                        System.out.println("REGISTERING A CLIENT");
                         // get client name (second word of the message, immediately after REGISTER keyword)
-                        this.name = keyWord.split(" ")[1];
+                        this.name = message.split(" ")[1];
 
                         // add the client name to the connection list and remove a record with client id
                         clientList.put(this.name, this);
                         clientList.remove(this.clientID);
-                        // add the client to the message list and remove the record with client ID
                         clientMessages.put(this.name, writer);
                         clientMessages.remove(this.clientID);
                     }
                     // unregister existing client
                     else if (keyWord.equals("unregister"))
                     {
-                        System.out.println("UN REGISTERING A CLIENT");
                         // remove the client from the connection list
                         clientList.remove(this.name);
+                        this.name = null;
                     }
-                    // what the frick frack
-                    // else if (keyWord.equals("asdasda"))
-                    // {
-                    //     System.out.println("CONFUSION");
-                    // }
-                    // just writing a normal message
+                    else if (keyWord.equals("quit"))
+                    {
+                        // remove the client from the connection list
+                        clientList.remove(this.name);
+                        this.name = null;
+                        this.clientSocket.close();
+                    }
                     else
                     {
-                        System.out.println("last option else");
+                        System.out.println("just send message to server and other clients");
                         // iterate over all messages that have been written by all clients
-                        for (PrintWriter writer: MessageServer.writers)
+                        for (PrintWriter out: MessageServer.writers)
                         {
+                            System.out.println("before the condition is checked");
                             if (this.name == null)
                             {
-                                writer.println("[ Client " + this.clientID + " ] says: " + message);
+                                System.out.println(">>> name is null");
+                                out.println("[ Client " + this.clientID + " ] says: " + message);
                             }
                             else
                             {
-                                writer.println(this.name + " says: " + message);
+                                System.out.println(">>> name NOT nulll");
+                                out.println(this.name + " says: " + message);
                             }
+                            System.out.println("after the condition is checked");
                         }
-
                     }
                 }
+                clientList.remove(this.name);
+                clientList.remove(this.clientID);
             }
             catch ( IOException e )
             {
@@ -195,9 +193,5 @@ public class MessageServer
             }
         }
     }
-
-
 }
 
-
-// handler class for multiple client connections

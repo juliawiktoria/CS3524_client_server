@@ -12,28 +12,31 @@ public class MessageClient
 {
     public MessageClient ( String hostname, int port) throws UnknownHostException, IOException, ClassNotFoundException
     {
-        BufferedReader stdin = new BufferedReader( new InputStreamReader( System.in ));
-        
         // Connect to and set up input/output streams with the server
         Socket clientSocket = new Socket( hostname, port );
 
         BufferedReader in  = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
         PrintWriter    out = new PrintWriter( new OutputStreamWriter( clientSocket.getOutputStream() ), true );
-        
-        // read in the welcome message from the server
-        // System.out.println( in.readLine() );
+
+        BufferedReader stdin = new BufferedReader( new InputStreamReader( System.in ));
+
+        String message;
 
         // loop so the client can send multiple messages
         while(true)
         {
-            System.out.print ( "ShoutClientSocket> " ) ;
-            String message = stdin.readLine();
-            out.println( message );
-            out.flush();
-            
-            message = in.readLine() ;
-            
-            System.out.println( "[ SERVER ] received message [" + message + "]" );    
+            while (in.ready())
+            {
+                System.out.print ( "ShoutClientSocket> " ) ;
+                message = stdin.readLine();
+                out.println( message );
+            }
+
+            while (stdin.ready())
+            {
+                message = stdin.readLine();
+                out.println(message);
+            } 
         }
     }
     
@@ -50,28 +53,5 @@ public class MessageClient
 
         // create a new MessageClient and pass parsed hostname and port as parameters
         new MessageClient ( hostname, port ) ; 
-        // try
-        // {
-        //     // parse the hostname and the port number from the passed parameters
-        //     String hostname = args[0]; 
-        //     int port = Integer.parseInt( args[1] ); 
-
-        //     // create a new MessageClient and pass parsed hostname and port as parameters
-        //     new MessageClient ( hostname, port ) ; 
-        // }
-        // catch (UnknownHostException e)
-        // {
-        //     System.out.println("Server exception: " + e);
-        //     System.out.println("Host name is not recognised");
-        //     e.printStackTrace();
-        // }
-        // catch (IOException e)
-        // {
-        //     System.out.println("Server exception: " + e);
-        //     System.out.println("Incorrect port number");
-        //     e.printStackTrace();
-        // }
-
-        
     } 
 }
