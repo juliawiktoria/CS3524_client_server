@@ -24,14 +24,10 @@ public class MessageServer
     // counter for clients 
     static int id = 0; 
 
-    // create a hashmap for client connections
-    // public static Map< String, ClientConnection > clientList = new HashMap< String, ClientConnection >() ;
-
     public MessageServer ( int serverPort ) throws IOException, ClassNotFoundException
     {
         this.serverSocket = new ServerSocket ( serverPort );
         System.out.println("Server open! Listening for client connections!");
-        // add further implementation
     }
 
     private void acceptClient( ) throws IOException
@@ -49,7 +45,7 @@ public class MessageServer
 
                 // create a new ClientConnection to handle the client
                 ClientConnection clientConn = new ClientConnection(client, id);
-                System.out.println(">>> Created new ClientConnection for the client " + clientIDname);
+                // System.out.println(">>> Created new ClientConnection for the client " + clientIDname);
 
                 // start new client thread
                 clientConn.start();
@@ -59,7 +55,6 @@ public class MessageServer
             }
         }
         catch (IOException e) {
-            System.out.println("@@@@@ exception caught in MessageServer.acceptClient() @@@@@");
             System.out.println("Server exception: " + e.getMessage());
         }
     }
@@ -116,8 +111,6 @@ public class MessageServer
         {
             try
             {
-                System.out.println("try block! run client connection");
-
                 // create input and output streams
                 reader  = new BufferedReader( new InputStreamReader( this.clientSocket.getInputStream() ) );
                 writer = new PrintWriter( new OutputStreamWriter( this.clientSocket.getOutputStream() ), true );
@@ -167,30 +160,22 @@ public class MessageServer
                         // iterate over all messages that have been written by all clients
                         for (PrintWriter out: MessageServer.writers)
                         {
-                            // System.out.println("before the condition is checked");
                             if (this.name == null)
                             {
-                                // System.out.println(">>> name is null");
                                 out.println("[ Client " + this.clientID + " ] says: " + message);
-                                // System.out.println("[ Client " + this.clientID + " ] says: " + message);
                             }
                             else
                             {
-                                // System.out.println(">>> name NOT nulll");
                                 out.println("[ " + this.name + " ] says: " + message);
-                                // System.out.println("[ " + this.name + " ] says: " + message);
                             }
-                            // System.out.println("after the condition is checked");
                         }
 
                         if (this.name == null)
                         {
-                            // System.out.println(">>> name is null");
                             System.out.println("[ Client " + this.clientID + " ] says: " + message);
                         }
                         else
                         {
-                            // System.out.println(">>> name NOT nulll");
                             System.out.println("[ " + this.name + " ] says: " + message);
                         }
                     }
@@ -200,7 +185,6 @@ public class MessageServer
             }
             catch ( IOException e )
             {
-                System.out.println("@@@@@ exception caught in ClientConnection.run() @@@@@");
                 System.out.println("Server Exception: " + e.getMessage());
             }
         }
