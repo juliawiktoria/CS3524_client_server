@@ -21,6 +21,7 @@ public class MessageClient
         BufferedReader stdin = new BufferedReader( new InputStreamReader( System.in ));
 
         String message;
+        System.out.print ( "ShoutClientSocket> " ) ;
 
         // loop so the client can send multiple messages
         while(true)
@@ -35,7 +36,6 @@ public class MessageClient
 
             while (stdin.ready())
             {
-                System.out.print ( "ShoutClientSocket> " ) ;
                 message = stdin.readLine();
                 out.println(message);
             } 

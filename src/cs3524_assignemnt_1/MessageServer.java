@@ -10,6 +10,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 
@@ -40,6 +41,7 @@ public class MessageServer
 
                 // accepting incoming client request
                 Socket client = serverSocket.accept();
+
                 String clientIDname = "[ Client #" + Integer.toString(id) + " ]";
                 System.out.println(">>> New client connection captured: " + clientIDname);
 
@@ -49,7 +51,6 @@ public class MessageServer
 
                 // start new client thread
                 clientConn.start();
-
                 // increment id number for the next client
                 id++;
             }
@@ -101,6 +102,9 @@ public class MessageServer
         public static Map< String, ClientConnection > clientList = new HashMap < String, ClientConnection > () ;
         public static Map< String, PrintWriter > clientMessages = new HashMap < String, PrintWriter > () ;
 
+        // create hash map for group messages
+        public static Map < String, ArrayList < String > > groupMessages = new HashMap < String, ArrayList < String > > ();
+
         public ClientConnection ( Socket clientSocket, Integer clientID ) throws IOException
         {
             this.clientSocket = clientSocket;
@@ -116,6 +120,10 @@ public class MessageServer
                 writer = new PrintWriter( new OutputStreamWriter( this.clientSocket.getOutputStream() ), true );
 
                 String message;
+                String[] separateWords;
+
+                // create an array list for usernames
+                ArrayList < String > usernames = new ArrayList < String > ();
 
                 // add new client connection to the list (use clientID when client not named)
                 clientList.put(this.clientID, this);
@@ -124,16 +132,24 @@ public class MessageServer
                 clientMessages.put(this.clientID, writer);
                 MessageServer.writers.add(writer);
 
-                while ( (message = reader.readLine()) != null )
+                // while ( (message = reader.readLine()) != null )
+                while ( ! this.clientSocket.isClosed() ) // use the command from the assignment notes??? works the same what the frick frack
                 {
+                    message = reader.readLine();
+                    // array of words in the message
+                    separateWords = message.split(" ");
+
                     //check first word for a command; force lowercase to avoid ambiguity
-                    String keyWord = message.split(" ")[0].toLowerCase();
+                    String keyWord = separateWords[0].toLowerCase();
+                    
+                    // LONG IF-THEN-ELSE INCOMING!
+                    // needs to check for keywords
 
                     // register new client
                     if (keyWord.equals("register"))
                     {
                         // get client name (second word of the message, immediately after REGISTER keyword)
-                        this.name = message.split(" ")[1];
+                        this.name = separateWords[1];
 
                         // add the client name to the connection list and remove a record with client id
                         clientList.put(this.name, this);
@@ -148,6 +164,121 @@ public class MessageServer
                         clientList.remove(this.name);
                         this.name = null;
                     }
+                    else if (keyWord.equals("create"))
+                    {
+                        // check if the message is long enough to contain all needed data
+                        if (separateWords.length < 2)
+                        {
+                            System.out.println("Name of the group not specified!");
+                        }
+                        // chceck if client has a name and add it to the usernames
+                        if (this.name == null)
+                        {
+                            usernames.add(this.clientID);
+                        }
+                        else
+                        {
+                            usernames.add(this.name);
+                        }
+                        // add client to the group with a specified name
+                        groupMessages.put(separateWords[1], usernames);
+                        writer.println("Group " + separateWords[1] + " has been successfully created!");
+                    }
+                    else if (keyWord.equals("join"))
+                    {
+                        // check if the message is long enough to contain all needed data
+                        System.out.println("join");
+                        if (separateWords.length < 2)
+                        {
+                            System.out.println("Name of the group not specified!");
+                        }
+                        
+                        // check if requested group exists
+                        if (groupMessages.containsKey(separateWords[1]))
+                        {
+                            if (this.name != null)
+                            {
+                                groupMessages.get(separateWords[1]).add(this.name);
+                            }
+                            else
+                            {
+                                groupMessages.get(separateWords[1]).add(this.clientID);
+                            }
+                            writer.println("Group " + separateWords[1] + " joined successfully!");
+                        }
+                        // if requested group does not exist create it and join
+                        else
+                        {
+                            if (this.name == null)
+                            {
+                                usernames.add(this.clientID);
+                            }
+                            else
+                            {
+                                usernames.add(this.name);
+                            }
+                            // add client to the group with a specified name
+                            groupMessages.put(separateWords[1], usernames);
+                            writer.println("Group " + separateWords[1] + " has been successfully created and joined!");
+                        }
+                    }
+                    // remove a group
+                    else if (keyWord.equals("leave"))
+                    {
+                        // check if the message is long enough to contain all needed data
+                        if (separateWords.length < 2)
+                        {
+                            System.out.println("Name of the group not specified!");
+                        }
+
+                        System.out.println("leave");
+
+                        // check if requested group exists
+                        if (groupMessages.containsKey(separateWords[1]))
+                        {
+                            if (this.name != null)
+                            {
+                                groupMessages.get(separateWords[1]).remove(this.name);
+                            }
+                            else
+                            {
+                                groupMessages.get(separateWords[1]).remove(this.clientID);
+                            }
+                            writer.println("Group " + separateWords[1] + " left successfully!");
+                        }
+                        // if the requested group does not exist display an error message
+                        else
+                        {
+                            writer.println("The group you are trying to leave does not exist!");
+                        }
+                    }
+                    // user wants to send a message to an existing group
+                    else if (keyWord.equals("send") && groupMessages.containsKey(separateWords[1]))
+                    {
+                        System.out.println("send to correct group");
+                        ArrayList < String > helperArray = groupMessages.get(separateWords[1]);
+                        String nameOfGroup = separateWords[1];
+
+                        for ( String user: helperArray )
+                        {
+                            PrintWriter localWriter = clientMessages.get(user);
+                            localWriter.println("[ " + this.name + " ] says: " + message.substring(keyWord.length() + nameOfGroup.length() + 2));
+                            localWriter.flush();
+                        }
+                    }
+                    else if (keyWord.equals("send") && (!groupMessages.containsKey(separateWords[1])))
+                    {
+                        System.out.println("send to a specific client");
+                        if (clientMessages.containsKey(separateWords[1]))
+                        {
+                            String clientName = (separateWords[1]);
+                            System.out.println(separateWords[1] + separateWords[0]);
+                            PrintWriter localWriter;
+                            localWriter = clientMessages.get(clientName);
+                            localWriter.println("[ "+ name + " ] sent: " + message.substring(keyWord.length() + clientName.length() + 2));
+                            localWriter.flush();
+                        }
+                    }
                     else if (keyWord.equals("quit"))
                     {
                         // remove the client from the connection list
@@ -155,9 +286,10 @@ public class MessageServer
                         this.name = null;
                         this.clientSocket.close();
                     }
+                    // if a group or a client name are specified incorrectly, the message is sent to all clients
                     else
                     {
-                        // iterate over all messages that have been written by all clients
+                    // iterate over clients and send that message
                         for (PrintWriter out: MessageServer.writers)
                         {
                             if (this.name == null)
@@ -190,4 +322,3 @@ public class MessageServer
         }
     }
 }
-
