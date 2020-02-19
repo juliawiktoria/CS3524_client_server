@@ -156,6 +156,15 @@ public class MessageServer
                         clientList.remove(this.clientID);
                         clientMessages.put(this.name, writer);
                         clientMessages.remove(this.clientID);
+                        // print in the server
+                        if (this.name == null)
+                        {
+                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                        }
+                        else
+                        {
+                            System.out.println("[ " + this.name + " ] says: " + message);
+                        }
                     }
                     // unregister existing client
                     else if (keyWord.equals("unregister"))
@@ -163,6 +172,15 @@ public class MessageServer
                         // remove the client from the connection list
                         clientList.remove(this.name);
                         this.name = null;
+                        // print in the server
+                        if (this.name == null)
+                        {
+                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                        }
+                        else
+                        {
+                            System.out.println("[ " + this.name + " ] says: " + message);
+                        }
                     }
                     else if (keyWord.equals("create"))
                     {
@@ -182,6 +200,15 @@ public class MessageServer
                         }
                         // add client to the group with a specified name
                         groupMessages.put(separateWords[1], usernames);
+                        // print in the server
+                        if (this.name == null)
+                        {
+                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                        }
+                        else
+                        {
+                            System.out.println("[ " + this.name + " ] says: " + message);
+                        }
                         writer.println("Group " + separateWords[1] + " has been successfully created!");
                     }
                     else if (keyWord.equals("join"))
@@ -204,6 +231,15 @@ public class MessageServer
                             {
                                 groupMessages.get(separateWords[1]).add(this.clientID);
                             }
+                            // print in the server
+                            if (this.name == null)
+                            {
+                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                            }
+                            else
+                            {
+                                System.out.println("[ " + this.name + " ] says: " + message);
+                            }
                             writer.println("Group " + separateWords[1] + " joined successfully!");
                         }
                         // if requested group does not exist create it and join
@@ -219,6 +255,15 @@ public class MessageServer
                             }
                             // add client to the group with a specified name
                             groupMessages.put(separateWords[1], usernames);
+                            // print in the server
+                            if (this.name == null)
+                            {
+                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                            }
+                            else
+                            {
+                                System.out.println("[ " + this.name + " ] says: " + message);
+                            }
                             writer.println("Group " + separateWords[1] + " has been successfully created and joined!");
                         }
                     }
@@ -231,8 +276,6 @@ public class MessageServer
                             System.out.println("Name of the group not specified!");
                         }
 
-                        System.out.println("leave");
-
                         // check if requested group exists
                         if (groupMessages.containsKey(separateWords[1]))
                         {
@@ -243,6 +286,15 @@ public class MessageServer
                             else
                             {
                                 groupMessages.get(separateWords[1]).remove(this.clientID);
+                            }
+                            //print in the server
+                            if (this.name == null)
+                            {
+                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                            }
+                            else
+                            {
+                                System.out.println("[ " + this.name + " ] says: " + message);
                             }
                             writer.println("Group " + separateWords[1] + " left successfully!");
                         }
@@ -255,7 +307,6 @@ public class MessageServer
                     // user wants to send a message to an existing group
                     else if (keyWord.equals("send") && groupMessages.containsKey(separateWords[1]))
                     {
-                        System.out.println("send to correct group");
                         ArrayList < String > helperArray = groupMessages.get(separateWords[1]);
                         String nameOfGroup = separateWords[1];
 
@@ -265,6 +316,16 @@ public class MessageServer
                             localWriter.println("[ " + this.name + " ] says: " + message.substring(keyWord.length() + nameOfGroup.length() + 2));
                             localWriter.flush();
                         }
+                        //print in the server
+                        if (this.name == null)
+                        {
+                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                        }
+                        else
+                        {
+                            System.out.println("[ " + this.name + " ] says: " + message);
+                        }
+                        
                     }
                     else if (keyWord.equals("send") && (!groupMessages.containsKey(separateWords[1])))
                     {
@@ -277,6 +338,15 @@ public class MessageServer
                             localWriter = clientMessages.get(clientName);
                             localWriter.println("[ "+ name + " ] sent: " + message.substring(keyWord.length() + clientName.length() + 2));
                             localWriter.flush();
+                            //print in the server
+                            if (this.name == null)
+                            {
+                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
+                            }
+                            else
+                            {
+                                System.out.println("[ " + this.name + " ] says: " + message);
+                            }
                         }
                     }
                     else if (keyWord.equals("quit"))
