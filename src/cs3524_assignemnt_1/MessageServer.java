@@ -22,6 +22,8 @@ public class MessageServer
 
     public static HashSet < PrintWriter > writers = new HashSet < PrintWriter > ();
 
+    public static ArrayList < String > topics = new ArrayList < String > ();
+
     // counter for clients 
     static int id = 0; 
 
@@ -99,16 +101,32 @@ public class MessageServer
         private String clientID;
 
         // create hash maps for storing client connections and client messages (output streams)
-        public static Map< String, ClientConnection > clientList = new HashMap < String, ClientConnection > () ;
-        public static Map< String, PrintWriter > clientMessages = new HashMap < String, PrintWriter > () ;
+        public static Map < String, ClientConnection > clientList = new HashMap < String, ClientConnection > () ;
+        public static Map < String, PrintWriter > clientMessages = new HashMap < String, PrintWriter > () ;
 
         // create hash map for group messages
         public static Map < String, ArrayList < String > > groupMessages = new HashMap < String, ArrayList < String > > ();
+
+        // create a hash map for subscribed topics
+        public static Map < String, ArrayList < String > > subscribedTopics = new HashMap < String, ArrayList < String > > ();
 
         public ClientConnection ( Socket clientSocket, Integer clientID ) throws IOException
         {
             this.clientSocket = clientSocket;
             this.clientID = String.valueOf(clientID);
+            subscribedTopics.put(this.clientID, new ArrayList < String > ());
+        }
+
+        public static void printInTheServer(ClientConnection client, String message)
+        {
+            if (client.name == null)
+            {
+                System.out.println("[ Client " + client.clientID + " ] says: " + message);
+            }
+            else
+            {
+                System.out.println("[ " + client.name + " ] says: " + message);
+            }
         }
 
         public void run ()
@@ -154,17 +172,14 @@ public class MessageServer
                         // add the client name to the connection list and remove a record with client id
                         clientList.put(this.name, this);
                         clientList.remove(this.clientID);
+
                         clientMessages.put(this.name, writer);
                         clientMessages.remove(this.clientID);
+
+                        subscribedTopics.remove(this.clientID);
+                        subscribedTopics.put(this.name, new ArrayList < String > ());
                         // print in the server
-                        if (this.name == null)
-                        {
-                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                        }
-                        else
-                        {
-                            System.out.println("[ " + this.name + " ] says: " + message);
-                        }
+                        printInTheServer(this, message);
                     }
                     // unregister existing client
                     else if (keyWord.equals("unregister"))
@@ -173,14 +188,7 @@ public class MessageServer
                         clientList.remove(this.name);
                         this.name = null;
                         // print in the server
-                        if (this.name == null)
-                        {
-                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                        }
-                        else
-                        {
-                            System.out.println("[ " + this.name + " ] says: " + message);
-                        }
+                        printInTheServer(this, message);
                     }
                     else if (keyWord.equals("create"))
                     {
@@ -201,14 +209,8 @@ public class MessageServer
                         // add client to the group with a specified name
                         groupMessages.put(separateWords[1], usernames);
                         // print in the server
-                        if (this.name == null)
-                        {
-                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                        }
-                        else
-                        {
-                            System.out.println("[ " + this.name + " ] says: " + message);
-                        }
+                        printInTheServer(this, message);
+
                         writer.println("Group " + separateWords[1] + " has been successfully created!");
                     }
                     else if (keyWord.equals("join"))
@@ -232,14 +234,8 @@ public class MessageServer
                                 groupMessages.get(separateWords[1]).add(this.clientID);
                             }
                             // print in the server
-                            if (this.name == null)
-                            {
-                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                            }
-                            else
-                            {
-                                System.out.println("[ " + this.name + " ] says: " + message);
-                            }
+                            printInTheServer(this, message);
+
                             writer.println("Group " + separateWords[1] + " joined successfully!");
                         }
                         // if requested group does not exist create it and join
@@ -256,14 +252,8 @@ public class MessageServer
                             // add client to the group with a specified name
                             groupMessages.put(separateWords[1], usernames);
                             // print in the server
-                            if (this.name == null)
-                            {
-                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                            }
-                            else
-                            {
-                                System.out.println("[ " + this.name + " ] says: " + message);
-                            }
+                            printInTheServer(this, message);
+
                             writer.println("Group " + separateWords[1] + " has been successfully created and joined!");
                         }
                     }
@@ -287,15 +277,9 @@ public class MessageServer
                             {
                                 groupMessages.get(separateWords[1]).remove(this.clientID);
                             }
-                            //print in the server
-                            if (this.name == null)
-                            {
-                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                            }
-                            else
-                            {
-                                System.out.println("[ " + this.name + " ] says: " + message);
-                            }
+                            // print in the server
+                            printInTheServer(this, message);
+
                             writer.println("Group " + separateWords[1] + " left successfully!");
                         }
                         // if the requested group does not exist display an error message
@@ -303,6 +287,116 @@ public class MessageServer
                         {
                             writer.println("The group you are trying to leave does not exist!");
                         }
+                    }
+                    // subscribe to a topic
+                    else if (keyWord.equals("subscribe"))
+                    {
+                        System.out.println("SUBSCRIBE TO MY CHANNEL");
+                        // print in the server
+                        printInTheServer(this, message);
+                        String topicToSubscribe = separateWords[1];
+                        // create a topic if it does not exist
+                        if (! topics.contains(topicToSubscribe))
+                        {
+                            topics.add(topicToSubscribe);
+                        }
+                        
+                        if (this.name != null)
+                        {
+                            subscribedTopics.get(this.name).add(topicToSubscribe);
+                            writer.print("Your subscribed topics: ");
+                            for (int i = 0; i < subscribedTopics.get(this.name).size(); i++)
+                            {
+                                writer.print(subscribedTopics.get(this.name).get(i) + " ");
+                            }
+                            writer.println("");
+                        }
+                        else
+                        {
+                            subscribedTopics.get(this.clientID).add(topicToSubscribe);
+                            writer.print("Your subscribed topics: ");
+                            for (int i = 0; i < subscribedTopics.get(this.clientID).size(); i++)
+                            {
+                                writer.print(subscribedTopics.get(this.clientID).get(i) + " ");
+                            }
+                            writer.println("");
+                        }
+                    }
+                    // unsubscribe a topic
+                    else if (keyWord.equals("unsubscribe"))
+                    {
+                        System.out.println("UN SUBSCRIBE TO MY CHANNEL");
+                        // print in the server
+                        printInTheServer(this, message);
+                        String topicToUnSubscribe = separateWords[1];
+                        if (topics.contains(topicToUnSubscribe))
+                        {
+                            if (this.name != null)
+                            {
+                                subscribedTopics.get(this.name).remove(topicToUnSubscribe);
+                                writer.print("Your subscribed topics: ");
+                                if (subscribedTopics.get(this.name).size() == 0)
+                                {
+                                    writer.println("You are not subscribed to any topics!");
+                                }
+                                else
+                                {
+                                    for (int i = 0; i < subscribedTopics.get(this.name).size(); i++)
+                                    {
+                                        writer.print(subscribedTopics.get(this.name).get(i) + " ");
+                                    }
+                                    writer.println("");
+                                }
+                            }
+                            else
+                            {
+                                subscribedTopics.get(this.clientID).remove(topicToUnSubscribe);
+                                writer.print("Your subscribed topics: ");
+                                if (subscribedTopics.get(this.clientID).size() == 0)
+                                {
+                                    writer.println("You are not subscribed to any topics!");
+                                }
+                                else
+                                {
+                                    for (int i = 0; i < subscribedTopics.get(this.clientID).size(); i++)
+                                    {
+                                        writer.print(subscribedTopics.get(this.clientID).get(i) + " ");
+                                    }
+                                    writer.println("");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            writer.println("These topic does not exist!");
+                        }
+                    }
+                    // screate a topic
+                    else if (keyWord.equals("topic"))
+                    {
+                        // check if the message is long enough to contain all needed data
+                        if (separateWords.length < 2)
+                        {
+                            System.out.println("Name of the topic not specified!");
+                        }
+
+                        String new_topic = separateWords[1];
+                        topics.add(new_topic);
+                        // print in the server
+                        printInTheServer(this, message);
+                    }
+                    // list all created topics
+                    else if (keyWord.equals("topics"))
+                    {
+                        writer.print("TOPICS: ");
+                        // prints topic list in the client who asked for topic list
+                        for (int i = 0; i < topics.size(); i++)
+                        {
+                            writer.print(topics.get(i) + " ");
+                        }
+                        writer.println("");
+                        // print in the server
+                        printInTheServer(this, message);
                     }
                     // user wants to send a message to an existing group
                     else if (keyWord.equals("send") && groupMessages.containsKey(separateWords[1]))
@@ -316,16 +410,8 @@ public class MessageServer
                             localWriter.println("[ " + this.name + " ] says: " + message.substring(keyWord.length() + nameOfGroup.length() + 2));
                             localWriter.flush();
                         }
-                        //print in the server
-                        if (this.name == null)
-                        {
-                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                        }
-                        else
-                        {
-                            System.out.println("[ " + this.name + " ] says: " + message);
-                        }
-                        
+                        // print in the server
+                        printInTheServer(this, message);
                     }
                     else if (keyWord.equals("send") && (!groupMessages.containsKey(separateWords[1])))
                     {
@@ -338,20 +424,16 @@ public class MessageServer
                             localWriter = clientMessages.get(clientName);
                             localWriter.println("[ "+ name + " ] sent: " + message.substring(keyWord.length() + clientName.length() + 2));
                             localWriter.flush();
-                            //print in the server
-                            if (this.name == null)
-                            {
-                                System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                            }
-                            else
-                            {
-                                System.out.println("[ " + this.name + " ] says: " + message);
-                            }
+
+                            // print in the server
+                            printInTheServer(this, message);
                         }
                     }
                     else if (keyWord.equals("quit"))
                     {
                         // remove the client from the connection list
+                        // print in the server
+                        printInTheServer(this, message);
                         clientList.remove(this.name);
                         this.name = null;
                         this.clientSocket.close();
@@ -372,14 +454,8 @@ public class MessageServer
                             }
                         }
 
-                        if (this.name == null)
-                        {
-                            System.out.println("[ Client " + this.clientID + " ] says: " + message);
-                        }
-                        else
-                        {
-                            System.out.println("[ " + this.name + " ] says: " + message);
-                        }
+                        // print in the server
+                        printInTheServer(this, message);
                     }
                 }
                 clientList.remove(this.name);
